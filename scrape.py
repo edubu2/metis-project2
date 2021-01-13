@@ -148,7 +148,7 @@ def scrape_games(start_year, end_year, save_to=False):
                 except:
                     pass
                 #     print(opponent)
-                results = re.findall(r"data-stat=\"([\w]+)\">([@\w-]+)", str(row))
+                results = re.findall(r"data-stat=\"([\w]+)\">([@ \w-]+)", str(row))
                 for result in results:
                     #         print(result)
                     if result != []:
@@ -162,16 +162,16 @@ def scrape_games(start_year, end_year, save_to=False):
                 else:
                     continue
 
-    sched_df = pd.DataFrame(games)
+    games_df = pd.DataFrame(games)
 
     if save_to:
-        sched_df.to_pickle("data/" + str(save_to))
+        games_df.to_pickle("data/" + str(save_to))
 
-    return sched_df
+    return games_df
 
 
-teams_df = scrape_team_stats(
-    start_year=1960, end_year=2020, save_to="team_stats_scraped.pickle"
-)
-sched_df = scrape_games(start_year=1960, end_year=2020, save_to="games_scraped.pickle")
+# teams_df = scrape_team_stats(
+#     start_year=1960, end_year=2020, save_to="team_stats_scraped.pickle"
+# )
+games_df = scrape_games(start_year=1960, end_year=2020, save_to="games_scraped.pickle")
 
