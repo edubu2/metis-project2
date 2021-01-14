@@ -4,6 +4,7 @@ import re
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+import pickle
 
 team_abbrevs = [
     "crd",
@@ -84,21 +85,18 @@ def scrape_team_stats(start_year, end_year, save_to=False):
                 if result != []:
                     stat, val = result[0]
                     try:
-                        val = int(val)
+                        stats[stat] = float(val)
                     except:
-                        pass
-
-                    stats[stat] = val
+                        stats[stat] = val
 
             for row in opp_table:
                 result = re.findall(r"data-stat=\"([\w]+)\">([\w]+)", str(row))
                 if result != []:
                     stat, val = result[0]
                     try:
-                        val = float(val)
+                        opp_stats[stat] = float(val)
                     except:
-                        pass
-                    opp_stats[stat] = val
+                        opp_stats[stat] = val
 
             # add 'opp' to the beginning of all opponents stats and merge into team_stats dict
             for stat in opp_stats:
@@ -108,17 +106,17 @@ def scrape_team_stats(start_year, end_year, save_to=False):
 
             nfl_team_stats.append(stats)
 
-    teams_df = pd.DataFrame(nfl_team_stats)
+    team_df = pd.DataFrame(nfl_team_stats)
 
     if save_to:
-        teams_df.to_pickle("data/" + str(save_to))
+        team_df.to_pickle("data/" + str(save_to))
 
-    return teams_df
+    return team_df
 
 
 def scrape_games(start_year, end_year, save_to=False):
     """
-        Builds a DataFrame containing all games from start_year to end_year (inclusive).
+    Builds a DataFrame containing all games from start_year to end_year (inclusive).
     """
 
     games = []
@@ -147,6 +145,14 @@ def scrape_games(start_year, end_year, save_to=False):
                     game["opp"] = opponent
                 except:
                     pass
+                # (try) to get week number of game
+                try:
+                    week_num = re.search(
+                        r"\"week_num\" scope=\"row\">([\w ]+)", str(row)
+                    )[1]
+                    game["week_num"] = week_num
+                except:
+                    pass
                 #     print(opponent)
                 results = re.findall(r"data-stat=\"([\w]+)\">([@ \w-]+)", str(row))
                 for result in results:
@@ -162,16 +168,18 @@ def scrape_games(start_year, end_year, save_to=False):
                 else:
                     continue
 
-    games_df = pd.DataFrame(games)
+    game_df = pd.DataFrame(games)
 
     if save_to:
-        games_df.to_pickle("data/" + str(save_to))
+        game_df.to_pickle("data/" + str(save_to))
 
-    return games_df
+    return game_df
 
 
 # teams_df = scrape_team_stats(
 #     start_year=1960, end_year=2020, save_to="team_stats_scraped.pickle"
 # )
-games_df = scrape_games(start_year=1960, end_year=2020, save_to="games_scraped.pickle")
-
+team_df = scrape_team_stats(
+    start_year=1960, end_year=2020, save_to="team_stats_scraped.pickle"
+)
+# game_df = scrape_games(start_year=1960, end_year=2020, save_to="games_scraped.pickle")
