@@ -48,6 +48,13 @@ def clean_games(scraped_games_data):
 
         return game_df
 
+    def square_turnovers(game_df):
+        """ Adds 'to2_off' and 'to2_def', which equal the squared turnover values. """
+
+        game_df[["to2_off", "to2_def"]] = game_df[["to_off", "to_def"]].to_numpy() ** 2
+
+        return game_df
+
     def add_ids(game_df):
         """ Inserts 'team_year' and 'game_id' columns to game_df. """
 
@@ -111,11 +118,13 @@ def clean_games(scraped_games_data):
             "pass_yds_off",
             "rush_yds_off",
             "to_off",
+            "to2_off",
             "first_down_def",
             "yards_def",
             "pass_yds_def",
             "rush_yds_def",
             "to_def",
+            "to2_def",
             "result_tie",
             "result_win",
         ]
@@ -126,7 +135,7 @@ def clean_games(scraped_games_data):
         # drop rows for bye weeks & drop exp_pts cols (must do this for shift to work)
         game_df.dropna(axis=0, how="any", subset=["game_outcome"], inplace=True)
 
-        game_df.drop(["exp_pts_off", "exp_pts_def", "exp_pts_st"], axis=1)
+        game_df.drop(["exp_pts_off", "exp_pts_def", "exp_pts_st"], axis=1, inplace=True)
 
         for col in cols_to_shift:
             new_col = "prev_" + col
@@ -153,10 +162,12 @@ def clean_games(scraped_games_data):
             "pass_yds_off",
             "rush_yds_off",
             "to_off",
+            "to2_off",
             "yards_def",
             "pass_yds_def",
             "rush_yds_def",
             "to_def",
+            "to2_def",
         ]
 
         # add 3 week rolling average
@@ -220,11 +231,13 @@ def clean_games(scraped_games_data):
             "prev_pass_yds_off",
             "prev_rush_yds_off",
             "prev_to_off",
+            "prev_to2_off",
             "prev_first_down_def",
             "prev_yards_def",
             "prev_pass_yds_def",
             "prev_rush_yds_def",
             "prev_to_def",
+            "prev_to2_def",
             "prev_result_tie",
             "prev_result_win",
             "roll3_pts_off",
@@ -271,6 +284,7 @@ def clean_games(scraped_games_data):
     def main(game_df):
         game_df = home_game(game_df)
         game_df = fix_date(game_df)
+        game_df = square_turnovers(game_df)
         game_df = add_ids(game_df)
         game_df = convert_game_outcomes(game_df)
         game_df = convert_team_records(game_df)
@@ -281,5 +295,6 @@ def clean_games(scraped_games_data):
         game_df = self_join_opp_cols(game_df)
         return game_df
 
+    # back to clean_games (parent func)
     game_df = main(game_df)
     return game_df
