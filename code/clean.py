@@ -154,6 +154,8 @@ def clean_games(scraped_games_data):
         """
 
         roll_cols = [
+            "result_win",
+            "result_tie",
             "pts_off",
             "pts_def",
             "margin",
@@ -182,13 +184,13 @@ def clean_games(scraped_games_data):
             lambda x: round(x.shift(1).rolling(3).sum(), 3)
         )
 
-        game_df.insert(loc=38, column="roll3_wins", value=rolling_wins)
+        game_df.insert(loc=53, column="roll3_num_wins", value=rolling_wins)
 
         rolling_ties = game_df.groupby("team_year")["result_win"].transform(
             lambda x: round(x.shift(1).rolling(3).sum(), 3)
         )
 
-        game_df.insert(loc=38, column="roll3_ties", value=rolling_ties)
+        game_df.insert(loc=53, column="roll3_num_ties", value=rolling_ties)
 
         # add 3-16 week EWMA cols
         ewma_cols = ["ewma_" + col_name for col_name in roll_cols]
@@ -220,9 +222,9 @@ def clean_games(scraped_games_data):
             "opp",
             "prev_wins",
             "prev_losses",
+            "prev_result_win",
+            "prev_result_tie",
             "prev_ties",
-            "roll3_ties",
-            "roll3_wins",
             "prev_pts_off",
             "prev_pts_def",
             "prev_margin",
@@ -238,8 +240,9 @@ def clean_games(scraped_games_data):
             "prev_rush_yds_def",
             "prev_to_def",
             "prev_to2_def",
-            "prev_result_tie",
-            "prev_result_win",
+            "roll3_result_win",
+            "roll3_result_tie",
+            "roll3_result_tie",
             "roll3_pts_off",
             "roll3_pts_def",
             "roll3_margin",
@@ -248,10 +251,14 @@ def clean_games(scraped_games_data):
             "roll3_pass_yds_off",
             "roll3_rush_yds_off",
             "roll3_to_off",
+            "roll3_to2_off",
             "roll3_yards_def",
             "roll3_pass_yds_def",
             "roll3_rush_yds_def",
             "roll3_to_def",
+            "roll3_to2_def",
+            "ewma_result_win",
+            "ewma_result_win",
             "ewma_pts_off",
             "ewma_pts_def",
             "ewma_margin",
@@ -260,10 +267,12 @@ def clean_games(scraped_games_data):
             "ewma_pass_yds_off",
             "ewma_rush_yds_off",
             "ewma_to_off",
+            "ewma_to2_off",
             "ewma_yards_def",
             "ewma_pass_yds_def",
             "ewma_rush_yds_def",
             "ewma_to_def",
+            "ewma_to2_def",
         ]
 
         # convert all numeric cols to float
