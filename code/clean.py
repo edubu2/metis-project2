@@ -28,7 +28,7 @@ def clean_games(scraped_games_data):
                 return 0
             return 1
 
-        game_df["home"] = game_df.game_location.apply(apply_home_game)
+        game_df["team_home_game"] = game_df.game_location.apply(apply_home_game)
         game_df.drop("game_location", axis=1, errors="ignore", inplace=True)
 
         return game_df
