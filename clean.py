@@ -196,6 +196,78 @@ def clean_games(scraped_games_data):
 
         return game_df
 
+    def self_join_opp_cols(game_df):
+        """
+            Currently, each row has all the stats needed for the team in the 'team' column.
+            However, we don't have the same information for the opponent in the same row. 
+
+            This function fixes that.
+        """
+        opp_pull_cols = [
+            "game_id",
+            "team",
+            "opp",
+            "prev_wins",
+            "prev_losses",
+            "prev_ties",
+            "roll3_ties",
+            "roll3_wins",
+            "prev_pts_off",
+            "prev_pts_def",
+            "prev_margin",
+            "prev_first_down_off",
+            "prev_yards_off",
+            "prev_pass_yds_off",
+            "prev_rush_yds_off",
+            "prev_to_off",
+            "prev_first_down_def",
+            "prev_yards_def",
+            "prev_pass_yds_def",
+            "prev_rush_yds_def",
+            "prev_to_def",
+            "prev_result_tie",
+            "prev_result_win",
+            "roll3_pts_off",
+            "roll3_pts_def",
+            "roll3_margin",
+            "roll3_first_down_off",
+            "roll3_yards_off",
+            "roll3_pass_yds_off",
+            "roll3_rush_yds_off",
+            "roll3_to_off",
+            "roll3_yards_def",
+            "roll3_pass_yds_def",
+            "roll3_rush_yds_def",
+            "roll3_to_def",
+            "ewma_pts_off",
+            "ewma_pts_def",
+            "ewma_margin",
+            "ewma_first_down_off",
+            "ewma_yards_off",
+            "ewma_pass_yds_off",
+            "ewma_rush_yds_off",
+            "ewma_to_off",
+            "ewma_yards_def",
+            "ewma_pass_yds_def",
+            "ewma_rush_yds_def",
+            "ewma_to_def",
+        ]
+
+        # convert all numeric cols to float
+        for col in opp_pull_cols[3:]:
+            game_df[col] = game_df[col].astype(float)
+
+        # self-join & merge dataFrame on itself, where:
+        #   - left_row 'game_id' & 'team' == right_row 'game_id' & 'opp'
+        game_df = game_df.merge(
+            right=game_df[opp_pull_cols],
+            left_on=["game_id", "team"],
+            right_on=["game_id", "opp"],
+            suffixes=[None, "_opp"],
+        )
+
+        return game_df
+
     def main(game_df):
         game_df = home_game(game_df)
         game_df = fix_date(game_df)
@@ -206,6 +278,7 @@ def clean_games(scraped_games_data):
         game_df = add_prev_week_cols(game_df)
         game_df = add_roll_cols(game_df)
         game_df = drop_first_three(game_df)
+        game_df = self_join_opp_cols(game_df)
         return game_df
 
     game_df = main(game_df)
