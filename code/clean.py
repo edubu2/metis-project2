@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 
-def clean_games(scraped_games_data):
+def clean_games(scraped_games_data, start_year=1960):
     """
         A series of nested functions that readies our data for modeling.
 
@@ -14,6 +14,12 @@ def clean_games(scraped_games_data):
               .pickle file containing the scraped game_df from web scraping.
     """
     game_df = pd.read_pickle(scraped_games_data)
+    assert start_year >= 1960, AssertionError(
+        "Please choose a start_year value between 1961 and 2019."
+    )
+    if start_year > 1960:
+        mask = game_df["year"] >= start_year
+        game_df = game_df.mask
 
     def home_game(game_df):
         """
