@@ -19,11 +19,11 @@ def clean_games(scraped_games_data, start_year=1960):
     )
     if start_year > 1960:
         mask = game_df["year"] >= start_year
-        game_df = game_df.mask
+        game_df = game_df[mask]
 
     def home_game(game_df):
         """
-            Changes the 'home' column from '@' to boolean 
+            Changes the 'game_location' column from '@' to boolean 
                 - i.e. 1 = True/ home game, 0 = False/ away game)
         """
 
