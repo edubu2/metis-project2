@@ -58,3 +58,4 @@ The work that went into these scripts can be found in: `scrape_game_data.ipynb` 
 ## Data Sources
 
 - NFL Team Statistics: [Pro Football Reference](pro-football-reference.com)
+- NFL Historical Spread Data: [kaggle.com/tobycrabtree](https://www.kaggle.com/tobycrabtree/nfl-scores-and-betting-data)
