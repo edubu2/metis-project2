@@ -114,9 +114,11 @@ def scrape_team_stats(start_year, end_year, save_to=False):
     return team_df
 
 
-def scrape_games(start_year, end_year, save_to=False):
+def scrape_games(start_year=1980, end_year=2000, save_to=False):
     """
     Builds a DataFrame containing all games from start_year to end_year (inclusive).
+
+
     """
 
     games = []
@@ -179,7 +181,7 @@ def scrape_games(start_year, end_year, save_to=False):
 # teams_df = scrape_team_stats(
 #     start_year=1960, end_year=2020, save_to="team_stats_scraped.pickle"
 # )
-team_df = scrape_team_stats(
-    start_year=1960, end_year=2020, save_to="team_stats_scraped.pickle"
-)
-# game_df = scrape_games(start_year=1960, end_year=2020, save_to="games_scraped.pickle")
+# team_df = scrape_team_stats(
+#     start_year=1980, end_year=2020, save_to="team_stats_scraped.pickle")
+
+game_df = scrape_games(start_year=1980, end_year=2020, save_to="games_scraped.pickle")
