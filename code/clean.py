@@ -49,8 +49,8 @@ def clean_games(scraped_games_data, start_year=1960):
         game_df.drop("game_date", axis=1, inplace=True, errors="ignore")
 
         # add decade column
-        decades = game_df["year"] // 10
-        game_df.insert(loc=5, column="decade", value=decades)
+        log_year = np.log(game_df["year"])
+        game_df.insert(loc=5, column="log_year", value=log_year)
 
         return game_df
 
