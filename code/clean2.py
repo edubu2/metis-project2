@@ -21,48 +21,34 @@ def clean_games(scraped_games_data, start_year=1960):
         mask = game_df["year"] >= start_year
         game_df = game_df[mask]
 
-    def home_game(game_df):
+    def add_cols(game_df):
+        """ 
+            Adds the following columns to game_df:
+                - team_home_game
+                - log_year
+                - decade
+                - team_year
+                - game_id
+                - win (boolean)
+                - tie (boolean)
+                - margin
+                - team_home_game
         """
-            Changes the 'game_location' column from '@' to boolean 
-                - i.e. 1 = True/ home game, 0 = False/ away game)
-        """
-
-        # create function that will be used with the df.apply() method
+        # add team_home_game column
         def apply_home_game(row):
-            """Simple function used for the home_game func to apply to each row. """
+            """Used to determine whether or not the game is a home_game. """
             if row == "@":
                 return 0
             return 1
 
         game_df["team_home_game"] = game_df.game_location.apply(apply_home_game)
-        game_df.drop("game_location", axis=1, errors="ignore", inplace=True)
 
-        return game_df
-
-    def fix_date(game_df):
-        """ Converts game_date to datetime format (and renames col to 'date'). """
-
-        f = r"%B %d-%Y"
-        full_game_date = game_df.game_date + "-" + game_df.year.astype(str)
-        full_game_date = pd.to_datetime(full_game_date, format=f)
-        game_df.insert(loc=2, column="date", value=full_game_date)
-        game_df.drop("game_date", axis=1, inplace=True, errors="ignore")
-
-        # add decade column
-        log_year = np.log(game_df["year"])
+        # add log_year and decade cols
+        log_year = np.log(game_df["season_year"])
         game_df.insert(loc=5, column="log_year", value=log_year)
 
-        return game_df
-
-    def square_turnovers(game_df):
-        """ Adds 'to2_off' and 'to2_def', which equal the squared turnover values. """
-
-        game_df[["to2_off", "to2_def"]] = game_df[["to_off", "to_def"]].to_numpy() ** 2
-
-        return game_df
-
-    def add_ids(game_df):
-        """ Inserts 'team_year' and 'game_id' columns to game_df. """
+        decade = game_df["season_year"] // 10
+        game_df.insert(loc=5, column="decade", value=decade)
 
         # insert team year column
         team_years = game_df["team"] + "-" + game_df["year"].astype(str)
@@ -75,54 +61,34 @@ def clean_games(scraped_games_data, start_year=1960):
             teams.append(str(row["opp"]))
             teams.sort()
 
-            game_id = teams[0] + "-" + teams[1] + "-" + str(row["date"])[:-9]
+            game_id = teams[0] + "-" + teams[1] + "-" + str(row["full_game_date"])[:-9]
             return game_id
 
         # insert game_id column using above function
-        game_df["game_id"] = game_df.apply(apply_game_id, axis=1)
+        game_ids = game_df.apply(apply_game_id, axis=1)
+        game_df.insert(loc=0, column="game_id", value=game_ids)
 
-        return game_df
-
-    def convert_game_outcomes(game_df):
-        """ Converts the game_outcome columns to dummy W/T columns"""
+        # add game_outcome dummy cols
 
         game_df[["result_tie", "result_win"]] = pd.get_dummies(
             game_df.game_outcome, drop_first=True
         )
 
-        return game_df
-
-    def convert_team_records(game_df):
-        """ This function splits team_record (format W-L-T) into three new columns. """
-
-        game_df = game_df.assign(
-            wins=game_df.team_record.str.split("-").str.get(0),
-            losses=game_df.team_record.str.split("-").str.get(1),
-            ties=game_df.team_record.str.split("-").str.get(2),
-        )
-        game_df["ties"] = game_df.ties.fillna(0)
-
-        return game_df
-
-    def add_cols(game_df):
-        """Adds 'margin', 'season_week', and 'playoff_game' columns. """
-
         margins = game_df.pts_off - game_df.pts_def
         game_df.insert(loc=11, column="margin", value=margins)
 
-        # get integer week_num col
+        return game_df
 
-        def apply_season_week_col(row):
-            week_val = row["week_num"]
-            if type(week_val) == float:
-                return week_val
-            else:
-                return 0
-
-        game_df["season_week"] = game_df.apply(apply_season_week_col, axis=1)
-
-        # add 'playoff_game' column
-        game_df["playoff_game"] = game_df["season_week"] == 0
+    def drop_useless_cols(game_df):
+        """ 
+            Removes the following columns:
+                - 'game_day_of_week'
+                - 'game_date': will instead be using 'full_game_date'
+                - 'game_location': since we replaced with boolean ('team_home_game')
+        """
+        game_df.drop("game_date", axis=1, inplace=True, errors="ignore")
+        game_df.drop("game_day_of_week", axis=1, inplace=True, errors="ignore")
+        game_df.drop("game_location", axis=1, errors="ignore", inplace=True)
 
         return game_df
 
@@ -231,9 +197,7 @@ def clean_games(scraped_games_data, start_year=1960):
 
         game_df.insert(loc=53, column="roll3_num_ties", value=rolling_ties)
 
-        # add 3-16 game rolling win column.
-
-        # add 3roll_wins & ties (sum instead of mean) (no cols to prevent multicolinearity)
+        # add 3-16 roll_wins & ties (sum instead of mean) (no loss cols to prevent multicolinearity)
         roll16_num_wins = game_df.groupby("team_year")["result_win"].transform(
             lambda x: round(x.shift(1).rolling(16, 3).sum(), 3)
         )
@@ -364,13 +328,8 @@ def clean_games(scraped_games_data, start_year=1960):
         return game_df
 
     def main(game_df):
-        game_df = home_game(game_df)
-        game_df = fix_date(game_df)
-        game_df = square_turnovers(game_df)
-        game_df = add_ids(game_df)
-        game_df = convert_game_outcomes(game_df)
-        game_df = convert_team_records(game_df)
         game_df = add_cols(game_df)
+        game_df = drop_useless_cols(game_df)
         game_df = add_prev_week_cols(game_df)
         game_df = add_off_bye_col(game_df)
         game_df = add_roll_cols(game_df)
