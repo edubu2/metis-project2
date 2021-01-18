@@ -104,15 +104,32 @@ def clean_games(scraped_games_data, start_year=1960):
 
         return game_df
 
-    def add_margin_col(game_df):
+    def add_cols(game_df):
+        """Adds 'margin', 'season_week', and 'playoff_game' columns. """
+
         margins = game_df.pts_off - game_df.pts_def
         game_df.insert(loc=11, column="margin", value=margins)
+
+        # get integer week_num col
+
+        def apply_season_week_col(row):
+            week_val = row["week_num"]
+            if type(week_val) == float:
+                return week_val
+            else:
+                return 0
+
+        game_df["season_week"] = game_df.apply(apply_season_week_col, axis=1)
+
+        # add 'playoff_game' column
+        game_df["playoff_game"] = game_df["season_week"] == 0
 
         return game_df
 
     def add_prev_week_cols(game_df):
 
         cols_to_shift = [
+            "season_week",
             "wins",
             "losses",
             "ties",
@@ -148,6 +165,22 @@ def clean_games(scraped_games_data, start_year=1960):
             game_df[new_col] = game_df.groupby("team_year")[col].apply(
                 lambda grp: grp.shift(1)
             )
+
+        return game_df
+
+    def add_off_bye_col(game_df):
+        def apply_off_bye(row):
+            if row["season_week"] > 1:  # playoff games have week_num = 0
+                off_bye = row["season_week"] - row["prev_season_week"] == 2
+            else:
+                off_bye = False
+            if off_bye == True:
+                return 1
+            return 0
+
+        game_df["off_bye"] = game_df[["season_week", "prev_season_week"]].apply(
+            apply_off_bye, axis=1
+        )
 
         return game_df
 
@@ -226,6 +259,7 @@ def clean_games(scraped_games_data, start_year=1960):
             "game_id",
             "team",
             "opp",
+            "off_bye",
             "prev_wins",
             "prev_losses",
             "prev_result_win",
@@ -303,8 +337,9 @@ def clean_games(scraped_games_data, start_year=1960):
         game_df = add_ids(game_df)
         game_df = convert_game_outcomes(game_df)
         game_df = convert_team_records(game_df)
-        game_df = add_margin_col(game_df)
+        game_df = add_cols(game_df)
         game_df = add_prev_week_cols(game_df)
+        game_df = add_off_bye_col(game_df)
         game_df = add_roll_cols(game_df)
         game_df = drop_first_three(game_df)
         game_df = self_join_opp_cols(game_df)
