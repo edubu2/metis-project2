@@ -253,7 +253,7 @@ def clean_games(scraped_games_data, start_year=1960):
             Currently, each row has all the stats needed for the team in the 'team' column.
             However, we don't have the same information for the opponent in the same row. 
 
-            This function fixes that.
+            This function fixes that. It also drops duplicates so that there is only one row per game.
         """
         opp_pull_cols = [
             "game_id",
@@ -327,6 +327,8 @@ def clean_games(scraped_games_data, start_year=1960):
             right_on=["game_id", "opp"],
             suffixes=[None, "_opp"],
         )
+
+        game_df.drop_duplicates(subset=["game_id"], inplace=True)
 
         return game_df
 
