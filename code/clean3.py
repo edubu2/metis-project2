@@ -13,14 +13,7 @@ def clean_games(scraped_games_data, start_year=1980):
             - scraped_games_data (required): the relative filepath to the 
               .pickle file containing the scraped game_df from web scraping.
     """
-    game_df = pd.read_pickle(scraped_games_data)
-    assert start_year >= 1960, AssertionError(
-        "Please choose a start_year value between 1961 and 2019."
-    )
-    if start_year > 1960:
-        mask = game_df["season_year"] >= start_year
-        game_df = game_df[mask]
-
+    # define lists of columns that will be used repeatedly
     def_unnamed_cols = [
         "game_id",
         "team",
@@ -48,7 +41,6 @@ def clean_games(scraped_games_data, start_year=1980):
         "fourth_down_att",
     ]
     def_named_cols = [col + "_def" for col in def_unnamed_cols]
-
     roll_cols = [
         "pts_off",
         "margin",
@@ -77,6 +69,18 @@ def clean_games(scraped_games_data, start_year=1980):
         "result_tie",
         "result_win",
     ]
+
+    def read_pickle(scraped_games_data, start_year=1980):
+
+        game_df = pd.read_pickle(scraped_games_data)
+        assert start_year >= 1960, AssertionError(
+            "Please choose a start_year value between 1961 and 2019."
+        )
+        if start_year > 1960:
+            mask = game_df["season_year"] >= start_year
+            game_df = game_df[mask]
+
+        return game_df
 
     def clean_home_games(game_df):
         # clean the game_location column & apply change. def home_game(row):
@@ -227,12 +231,6 @@ def clean_games(scraped_games_data, start_year=1980):
         # add ewma cols
         game_df[roll_cols] = game_df[roll_cols].astype(float)
 
-        ewma3_cols = ["ewma3_" + col_name for col_name in roll_cols]
-
-        game_df[ewma3_cols] = game_df.groupby("team_year")[roll_cols].transform(
-            lambda x: round(x.shift(1).ewm(span=3, min_periods=1).mean(), 3)
-        )
-
         ewma19_cols = ["ewma19_" + col_name for col_name in roll_cols]
 
         game_df[ewma19_cols] = game_df.groupby("team_year")[roll_cols].transform(
@@ -263,9 +261,14 @@ def clean_games(scraped_games_data, start_year=1980):
             right_on=["game_id", "opp"],
             suffixes=[None, "_opp"],
         )
+
+        game_df.drop(
+            columns=["team_opp", "opp_opp", "team_home_game_opp"], axis=1, inplace=True
+        )
         return game_df
 
-    def main(game_df):
+    def main(scraped_games_data, start_year):
+        game_df = read_pickle(scraped_games_data, start_year)
         game_df = clean_home_games(game_df)
         game_df = add_initial_cols(game_df)
         game_df = get_def_stats(game_df)
@@ -275,5 +278,5 @@ def clean_games(scraped_games_data, start_year=1980):
 
         return game_df
 
-    game_df = main(game_df)
+    game_df = main(scraped_games_data, start_year)
     return game_df
