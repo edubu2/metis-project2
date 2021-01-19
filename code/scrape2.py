@@ -127,24 +127,24 @@ def scrape_reg_season(start_year, end_year, outfile_path):
                         except:
                             pass
 
-                    # pull all stats
-                    results = re.findall(r"data-stat=\"([\w]+)\">([ :@\w-]+)", str(row))
+                # pull all stats
+                results = re.findall(r"data-stat=\"([\w]+)\">([ :@\w-]+)", str(row))
 
-                    for result in results:
-                        if result != []:
-                            stat, val = result
-                        if val.isdigit():
-                            if defense == False:
-                                game_stats[stat] = float(val)
-                            else:
-                                game_stats[stat + "_def"] = float(val)
+                for result in results:
+                    if result != []:
+                        stat, val = result
+                    if val.isdigit():
+                        if defense == False:
+                            game_stats[stat] = float(val)
                         else:
-                            if defense == False:
-                                game_stats[stat] = str(val)
-                            else:
-                                game_stats[stat + "_def"] = str(val)
+                            game_stats[stat + "_def"] = float(val)
+                    else:
+                        if defense == False:
+                            game_stats[stat] = str(val)
+                        else:
+                            game_stats[stat + "_def"] = str(val)
 
-                    games.append(game_stats)
+                games.append(game_stats)
 
     game_df = pd.DataFrame(games)
     if outfile_path != None:
