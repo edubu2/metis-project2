@@ -41,6 +41,8 @@ def clean_games(scraped_games_data, start_year=1980):
             "punt_def",
             "punt_yds_def",
             "time_of_poss_def",
+            "game_location_def",
+            "overtime_def",
         ],
         axis=1,
         inplace=True,
@@ -98,6 +100,21 @@ def clean_games(scraped_games_data, start_year=1980):
         "result_tie",
         "result_win",
     ]
+
+    def convert_drop_na(game_df):
+        """Preliminary cleaning."""
+
+        game_df.dropna(
+            subset=[
+                "rush_yds",
+                "rush_yds_per_att",
+                "rush_yds_def",
+                "rush_yds_per_att_def",
+            ],
+            inplace=True,
+            axis=1,
+            errors="ignore",
+        )
 
     def add_cols(game_df):
         """ 
