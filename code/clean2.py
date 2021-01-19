@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 
-def clean_games(scraped_games_data, start_year=1960):
+def clean_games(scraped_games_data, start_year=1980):
     """
         A series of nested functions that readies our data for modeling.
 
@@ -18,8 +18,42 @@ def clean_games(scraped_games_data, start_year=1960):
         "Please choose a start_year value between 1961 and 2019."
     )
     if start_year > 1960:
-        mask = game_df["year"] >= start_year
+        mask = game_df["season_year"] >= start_year
         game_df = game_df[mask]
+
+    roll_cols = [
+        "pts_off",
+        "margin",
+        "pts_def",
+        "pass_cmp",
+        "pass_att",
+        "pass_yds",
+        "pass_td",
+        "pass_int",
+        "pass_sacked",
+        "pass_sacked_yds",
+        "pass_yds_per_att",
+        "pass_net_yds_per_att",
+        "pass_cmp_perc",
+        "pass_rating",
+        "rush_att",
+        "rush_yds",
+        "rush_yds_per_att",
+        "rush_td",
+        "fgm",
+        "fga",
+        "xpm",
+        "xpa",
+        "punt",
+        "punt_yds",
+        "third_down_success",
+        "third_down_att",
+        "fourth_down_success",
+        "fourth_down_att",
+        "team_home_game",
+        "result_tie",
+        "result_win",
+    ]
 
     def add_cols(game_df):
         """ 
@@ -33,7 +67,10 @@ def clean_games(scraped_games_data, start_year=1960):
                 - tie (boolean)
                 - margin
                 - team_home_game
+                - td_off
+                - total_yds_off
         """
+
         # add team_home_game column
         def apply_home_game(row):
             """Used to determine whether or not the game is a home_game. """
@@ -51,7 +88,7 @@ def clean_games(scraped_games_data, start_year=1960):
         game_df.insert(loc=5, column="decade", value=decade)
 
         # insert team year column
-        team_years = game_df["team"] + "-" + game_df["year"].astype(str)
+        team_years = game_df["team"] + "-" + game_df["season_year"].astype(str)
         game_df.insert(loc=2, column="team_year", value=team_years)
 
         # create func to use with .apply() to get a unique game identifier (the same for both rows of the same game)
@@ -77,10 +114,24 @@ def clean_games(scraped_games_data, start_year=1960):
         margins = game_df.pts_off - game_df.pts_def
         game_df.insert(loc=11, column="margin", value=margins)
 
+        # DROPNA RUSH_YDS PASS_YDS THIS COULD BREAK SOMETHING LATER ON
+        game_df.dropna(subset=roll_cols, how="any", inplace=True)
+
+        # add total_td_off col
+        game_df["total_td_off"] = game_df["rush_td"] + game_df["pass_td"]
+        roll_cols.append("total_td_off")
+
+        # add total_yds_off col
+        game_df["total_yds_off"] = game_df["rush_yds"].astype(int) + game_df[
+            "pass_yds"
+        ].astype(int)
+        roll_cols.append("total_yds_off")
+
         return game_df
 
     def drop_useless_cols(game_df):
         """ 
+            Removes rows where the 
             Removes the following columns:
                 - 'game_day_of_week'
                 - 'game_date': will instead be using 'full_game_date'
@@ -92,39 +143,55 @@ def clean_games(scraped_games_data, start_year=1960):
 
         return game_df
 
+    def drop_missing_values(game_df):
+        """
+            Drops any rows missing critical data.
+        """
+
+        # remove missing 'opp' rows
+        game_df["opp"] = game_df.opp.astype(str)
+        game_df["opp"].replace({"nan": np.NaN}, inplace=True)
+        game_df.dropna(subset=["opp", "game_outcome"], how="any", inplace=True)
+
+        return game_df
+
+    def fix_formats(game_df):
+
+        numeric_cols = [
+            "pass_yds",
+            "pass_yds_per_att",
+            "pass_net_yds_per_att",
+            "rush_yds",
+            "rush_yds_per_att",
+        ]
+        game_df[numeric_cols] = game_df[numeric_cols].astype(float)
+
+        game_df.dropna(
+            subset=[
+                "third_down_success",
+                "third_down_att",
+                "fourth_down_success",
+                "fourth_down_att",
+            ],
+            how="any",
+            inplace=True,
+        )
+
+        # convert overtime column to boolean
+        game_df["overtime"].fillna(0)
+        game_df["overtime"].replace({"OT": 1}, inplace=True)
+
+        return game_df
+
     def add_prev_week_cols(game_df):
 
-        cols_to_shift = [
-            "season_week",
-            "wins",
-            "losses",
-            "ties",
-            "pts_off",
-            "pts_def",
-            "margin",
-            "first_down_off",
-            "yards_off",
-            "pass_yds_off",
-            "rush_yds_off",
-            "to_off",
-            "to2_off",
-            "first_down_def",
-            "yards_def",
-            "pass_yds_def",
-            "rush_yds_def",
-            "to_def",
-            "to2_def",
-            "result_tie",
-            "result_win",
-        ]
+        cols_to_shift = ["week_num", "result_win", "result_tie", "margin"]
 
         # convert NaNs to zero (0s came thru as NaN values)
         game_df[cols_to_shift] = game_df[cols_to_shift].fillna(0)
 
-        # drop rows for bye weeks & drop exp_pts cols (must do this for shift to work)
+        # drop rows for bye weeks (must do this for shift to work)
         game_df.dropna(axis=0, how="any", subset=["game_outcome"], inplace=True)
-
-        game_df.drop(["exp_pts_off", "exp_pts_def", "exp_pts_st"], axis=1, inplace=True)
 
         for col in cols_to_shift:
             new_col = "prev_" + col
@@ -135,16 +202,17 @@ def clean_games(scraped_games_data, start_year=1960):
         return game_df
 
     def add_off_bye_col(game_df):
+        # add 'off_bye' (boolean) col
         def apply_off_bye(row):
-            if row["season_week"] > 1:  # playoff games have week_num = 0
-                off_bye = row["season_week"] - row["prev_season_week"] == 2
+            if row["week_num"] > 1:  # playoff games have week_num = 0
+                off_bye = row["week_num"] - row["prev_week_num"] == 2
             else:
                 off_bye = False
             if off_bye == True:
                 return 1
             return 0
 
-        game_df["off_bye"] = game_df[["season_week", "prev_season_week"]].apply(
+        game_df["off_bye"] = game_df[["week_num", "prev_week_num"]].apply(
             apply_off_bye, axis=1
         )
 
@@ -157,64 +225,35 @@ def clean_games(scraped_games_data, start_year=1960):
                 2. ewma_<stat_column>: exponentially weighted moving average of the last 3-16 weeks (greedy)
                     - gives highest weighting to the most recent week; lowest weighting to the oldest week
         """
+        game_df.sort_values(["season_year", "team", "week_num"], inplace=True)
 
-        roll_cols = [
-            "result_win",
-            "result_tie",
-            "pts_off",
-            "pts_def",
-            "margin",
-            "first_down_off",
-            "yards_off",
-            "pass_yds_off",
-            "rush_yds_off",
-            "to_off",
-            "to2_off",
-            "yards_def",
-            "pass_yds_def",
-            "rush_yds_def",
-            "to_def",
-            "to2_def",
-        ]
+        # add 1-20 week rolling sum (AKA season totals)
+        roll19_cols = ["sn_total_" + col_name for col_name in roll_cols]
 
-        # add 3 week rolling average
-        roll3_cols = ["roll3_" + col_name for col_name in roll_cols]
-
-        game_df[roll3_cols] = game_df.groupby("team_year")[roll_cols].transform(
-            lambda x: round(x.shift(1).rolling(3).mean(), 3)
+        game_df[roll19_cols] = game_df.groupby("team_year")[roll_cols].transform(
+            lambda x: round(x.shift(1).rolling(19, 1).sum(), 3)
         )
 
         # add 3roll_wins & ties (sum instead of mean) (no cols to prevent multicolinearity)
-        rolling_wins = game_df.groupby("team_year")["result_win"].transform(
-            lambda x: round(x.shift(1).rolling(3).sum(), 3)
+        game_df["roll3_num_wins"] = game_df.groupby("team_year")[
+            "result_win"
+        ].transform(lambda x: round(x.shift(1).rolling(3).sum(), 3))
+
+        game_df["roll3_num_ties"] = game_df.groupby("team_year")[
+            "result_tie"
+        ].transform(lambda x: round(x.shift(1).rolling(3).sum(), 3))
+
+        # add 3 & 19 week EWMA cols
+        ewma3_cols = ["ewma3_" + col_name for col_name in roll_cols]
+
+        game_df[ewma3_cols] = game_df.groupby("team_year")[roll_cols].transform(
+            lambda x: round(x.shift(1).ewm(span=3, min_periods=3).mean(), 3)
         )
 
-        game_df.insert(loc=53, column="roll3_num_wins", value=rolling_wins)
+        ewma19_cols = ["ewma19_" + col_name for col_name in roll_cols]
 
-        rolling_ties = game_df.groupby("team_year")["result_tie"].transform(
-            lambda x: round(x.shift(1).rolling(3).sum(), 3)
-        )
-
-        game_df.insert(loc=53, column="roll3_num_ties", value=rolling_ties)
-
-        # add 3-16 roll_wins & ties (sum instead of mean) (no loss cols to prevent multicolinearity)
-        roll16_num_wins = game_df.groupby("team_year")["result_win"].transform(
-            lambda x: round(x.shift(1).rolling(16, 3).sum(), 3)
-        )
-
-        game_df.insert(loc=53, column="roll16_num_wins", value=roll16_num_wins)
-
-        roll16_num_ties = game_df.groupby("team_year")["result_tie"].transform(
-            lambda x: round(x.shift(1).rolling(16, 3).sum(), 3)
-        )
-
-        game_df.insert(loc=53, column="roll16_num_ties", value=roll16_num_ties)
-
-        # add 3-16 week EWMA cols
-        ewma_cols = ["ewma_" + col_name for col_name in roll_cols]
-
-        game_df[ewma_cols] = game_df.groupby("team_year")[roll_cols].transform(
-            lambda x: round(x.shift(1).ewm(span=16, min_periods=3).mean(), 3)
+        game_df[ewma19_cols] = game_df.groupby("team_year")[roll_cols].transform(
+            lambda x: round(x.shift(1).ewm(span=19, min_periods=3).mean(), 3)
         )
 
         return game_df
@@ -223,7 +262,7 @@ def clean_games(scraped_games_data, start_year=1960):
         """ Drops first 3 weeks of each year. """
 
         # drop rows without moving averages (first 3 weeks of every season)
-        game_df.dropna(axis=0, how="any", subset=["roll3_pts_off"], inplace=True)
+        game_df.dropna(axis=0, how="any", subset=["ewma19_pass_yds"], inplace=True)
 
         return game_df
 
@@ -234,73 +273,14 @@ def clean_games(scraped_games_data, start_year=1960):
 
             This function fixes that. It also drops duplicates so that there is only one row per game.
         """
-        opp_pull_cols = [
-            "game_id",
-            "team",
-            "opp",
-            "off_bye",
-            "prev_wins",
-            "prev_losses",
-            "prev_result_win",
-            "prev_result_tie",
-            "prev_ties",
-            "prev_pts_off",
-            "prev_pts_def",
-            "prev_margin",
-            "prev_first_down_off",
-            "prev_yards_off",
-            "prev_pass_yds_off",
-            "prev_rush_yds_off",
-            "prev_to_off",
-            "prev_to2_off",
-            "prev_first_down_def",
-            "prev_yards_def",
-            "prev_pass_yds_def",
-            "prev_rush_yds_def",
-            "prev_to_def",
-            "prev_to2_def",
-            "roll16_num_wins",
-            "roll16_num_ties",
-            "roll3_num_wins",
-            "roll3_num_ties",
-            "roll3_result_win",
-            "roll3_result_tie",
-            "roll3_result_tie",
-            "roll3_pts_off",
-            "roll3_pts_def",
-            "roll3_margin",
-            "roll3_first_down_off",
-            "roll3_yards_off",
-            "roll3_pass_yds_off",
-            "roll3_rush_yds_off",
-            "roll3_to_off",
-            "roll3_to2_off",
-            "roll3_yards_def",
-            "roll3_pass_yds_def",
-            "roll3_rush_yds_def",
-            "roll3_to_def",
-            "roll3_to2_def",
-            "ewma_result_win",
-            "ewma_result_win",
-            "ewma_pts_off",
-            "ewma_pts_def",
-            "ewma_margin",
-            "ewma_first_down_off",
-            "ewma_yards_off",
-            "ewma_pass_yds_off",
-            "ewma_rush_yds_off",
-            "ewma_to_off",
-            "ewma_to2_off",
-            "ewma_yards_def",
-            "ewma_pass_yds_def",
-            "ewma_rush_yds_def",
-            "ewma_to_def",
-            "ewma_to2_def",
-        ]
-
-        # convert all numeric cols to float
-        for col in opp_pull_cols[3:]:
-            game_df[col] = game_df[col].astype(float)
+        # put together a list of all columns that need to be merged into the relevant row
+        opp_pull_cols = [col for col in roll_cols]
+        prefixes = ["prev_", "sn_to", "roll3", "ewma3", "ewma1"]
+        [opp_pull_cols.append(col) for col in game_df.columns if col[:5] in prefixes]
+        opp_pull_cols.insert(0, "opp")
+        opp_pull_cols.insert(0, "team")
+        opp_pull_cols.insert(0, "game_id")
+        opp_pull_cols = list(set(opp_pull_cols))  # removes duplicates
 
         # self-join & merge dataFrame on itself, where:
         #   - left_row 'game_id' & 'team' == right_row 'game_id' & 'opp'
@@ -311,6 +291,7 @@ def clean_games(scraped_games_data, start_year=1960):
             suffixes=[None, "_opp"],
         )
 
+        # drop duplicate rows, resulting in one row per game.
         game_df.drop_duplicates(subset=["game_id"], inplace=True)
 
         return game_df
@@ -321,8 +302,12 @@ def clean_games(scraped_games_data, start_year=1960):
                 - ewma_margin_diff: the difference between 'team' ewma margin and 'opp' ewma margin.
         """
 
-        game_df["ewma_margin_diff"] = (
-            game_df["ewma_margin"] - game_df["ewma_margin_opp"]
+        game_df["ewma3_margin_diff"] = (
+            game_df["ewma3_margin"] - game_df["ewma19_margin_opp"]
+        )
+
+        game_df["ewma19_margin_diff"] = (
+            game_df["ewma19_margin"] - game_df["ewma19_margin_opp"]
         )
 
         return game_df
@@ -330,6 +315,8 @@ def clean_games(scraped_games_data, start_year=1960):
     def main(game_df):
         game_df = add_cols(game_df)
         game_df = drop_useless_cols(game_df)
+        game_df = drop_missing_values(game_df)
+        game_df = fix_formats(game_df)
         game_df = add_prev_week_cols(game_df)
         game_df = add_off_bye_col(game_df)
         game_df = add_roll_cols(game_df)
