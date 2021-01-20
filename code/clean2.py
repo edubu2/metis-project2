@@ -178,7 +178,7 @@ def clean_games(scraped_games_data, start_year=1980):
         )
 
         # convert overtime column to boolean
-        game_df["overtime"].fillna(0)
+        game_df["overtime"].fillna(0, inplace=True)
         game_df["overtime"].replace({"OT": 1}, inplace=True)
 
         return game_df
