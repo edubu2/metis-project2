@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 
-def clean_games(scraped_games_data, start_year=1960):
+def clean_games1(scraped_games_data, start_year=1960):
     """
         A series of nested functions that readies our data for modeling.
 
