@@ -323,60 +323,6 @@ def clean_games(scraped_games_data, start_year=1990):
 
         return game_df
 
-    def get_turnovers(game_df):
-        temp_df = pd.read_pickle("data/games_scraped.pickle")
-        mask = temp_df.year > 1989
-        temp_df = temp_df[mask]
-        temp_df = temp_df[["game_date", "year", "team", "opp", "to_off", "to_def"]]
-
-        f = r"%B %d-%Y"
-        full_game_date = temp_df.game_date + "-" + temp_df.year.astype(str)
-        full_game_date = pd.to_datetime(full_game_date, format=f)
-        temp_df.insert(loc=2, column="date", value=full_game_date)
-        temp_df.drop("game_date", axis=1, inplace=True, errors="ignore")
-
-        def apply_game_id_temp(row):
-            teams = []
-            teams.append(str(row["team"]))
-            teams.append(str(row["opp"]))
-            teams.sort()
-
-            game_id = teams[0] + "-" + teams[1] + "-" + str(row["date"])[:-9]
-            return game_id
-
-        # insert game_id column using above function
-        temp_df["game_id"] = temp_df.apply(apply_game_id_temp, axis=1)
-
-        # pull to cols into game_df
-        game_df = game_df.merge(
-            right=temp_df[["game_id", "to_off", "to_def"]],
-            how="left",
-            on="game_id",
-            suffixes=[None, "_opp"],
-        )
-
-        game_df.fillna(value={"to_off": 0, "to_def": 0}, inplace=True)
-
-        # get ewma for turnovers
-        game_df[["ewma_to_off", "ewma_to_def"]] = game_df.groupby("team_year")[
-            ["to_off", "to_def"]
-        ].transform(lambda x: x.shift(1).ewm(span=19, min_periods=3).mean())
-
-        # pull opposing cols
-        game_df = game_df.merge(
-            right=game_df[["game_id", "team", "opp", "ewma_to_off", "ewma_to_def"]],
-            left_on=["game_id", "team"],
-            right_on=["game_id", "opp"],
-            suffixes=[None, "_opp"],
-        )
-
-        # drop duplicate cols so only one row per game
-        game_df.drop_duplicates(subset=["game_id"], inplace=True)
-        ewm_cols = [col for col in game_df.columns if col[:5] == "ewma_"]
-        game_df.dropna(how="any", subset=ewm_cols, inplace=True)
-        game_df.drop(columns=["team_opp", "opp_opp"], axis=1, inplace=True)
-        return game_df
-
     def add_more_features(game_df):
         # add log_year feature
         game_df["log_year"] = np.log(game_df.season_year)
@@ -416,6 +362,13 @@ def clean_games(scraped_games_data, start_year=1990):
             game_df["ewma_pass_yds_def_opp"] + game_df["ewma_rush_yds_def_opp"]
         )
 
+        # add trending margin (ewma4 margin - ewma19 margin)
+        game_df["trend_ewma4_19"] = game_df["ewma4_margin"] - game_df["ewma_margin"]
+
+        game_df["trend_ewma4_19_opp"] = (
+            game_df["ewma4_margin_opp"] - game_df["ewma_margin_opp"]
+        )
+
         return game_df
 
     def main(scraped_games_data, start_year):
@@ -427,7 +380,6 @@ def clean_games(scraped_games_data, start_year=1990):
         game_df = perform_shifts(game_df)
         game_df = add_features(game_df)
         game_df = pull_opposing_stats(game_df)
-        game_df = get_turnovers(game_df)
         game_df = add_more_features(game_df)
 
         return game_df
