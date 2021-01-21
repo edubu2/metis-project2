@@ -44,6 +44,8 @@ The work that went into these scripts can be found in: `scrape_game_data.ipynb` 
 
 ### Model Selection
 
+Standard Linear Regression model consistently yielded the highest R^2 values. 
+Lasso: Used to enhance feature selection process & further increase R^2 in Standard Linear Regression
 
 
 ---
