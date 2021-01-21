@@ -20,6 +20,7 @@ def clean_games(scraped_games_data, start_year=1990):
     """
     # define lists of columns that will be used repeatedly
     def_unnamed_cols = [
+        "team_home_game",
         "game_id",
         "team",
         "opp",
@@ -245,6 +246,49 @@ def clean_games(scraped_games_data, start_year=1990):
 
         return game_df
 
+    def add_features(game_df):
+        """
+            Adds the following features to game_df for modeling:
+                - roll19_wins       (sum)
+                - roll19_margin     (sum)
+                - ewma10_wins       (mean)
+                - ewma10_margin     (mean)
+                - ewma4_wins        (mean)
+                - ewma4_margin      (mean)
+                - log_year
+                - and the following 19 week rolling means:   
+                    - ewma_third_conv_pct
+                    - ewma_third_conv_pct_opp
+                    - ewma_pass_cmp_def
+                    - ewma_pass_cmp_perc_def
+                    - ewma_pass_cmp_perc_def_opp
+                    - ewma4_margin_opp
+        """
+
+        # add rolling 19 wins & margin as well as alternate ewma 19 wins
+        game_df[["roll19_wins"]] = game_df.groupby("team_year")["result_win"].transform(
+            lambda x: x.shift(1).rolling(19, min_periods=3).sum()
+        )
+        game_df[["roll19_margin"]] = game_df.groupby("team_year")["margin"].transform(
+            lambda x: x.shift(1).rolling(19, min_periods=3).sum()
+        )
+
+        game_df[["ewma10_wins"]] = game_df.groupby("team_year")["result_win"].transform(
+            lambda x: round(x.shift(1).ewm(span=10, min_periods=3).mean())
+        )
+        game_df[["ewma10_margin"]] = game_df.groupby("team_year")["margin"].transform(
+            lambda x: round(x.shift(1).ewm(span=10, min_periods=3).mean())
+        )
+
+        game_df[["ewma4_wins"]] = game_df.groupby("team_year")["result_win"].transform(
+            lambda x: round(x.shift(1).ewm(span=4, min_periods=3).mean())
+        )
+        game_df[["ewma4_margin"]] = game_df.groupby("team_year")["margin"].transform(
+            lambda x: round(x.shift(1).ewm(span=4, min_periods=3).mean())
+        )
+
+        return game_df
+
     def pull_opposing_stats(game_df):
         # gather one list of columns to get from the other game record.
         prefixes = ["prev", "roll", "ewma"]
@@ -252,6 +296,15 @@ def clean_games(scraped_games_data, start_year=1990):
         opp_pull_cols = [col for col in game_df.columns if col[:4] in prefixes]
         # add defensive columns
         [opp_pull_cols.append(col) for col in game_df.columns if col[-4:] == "_def"]
+        additional_cols = [
+            "roll19_wins",
+            "roll19_margin",
+            "ewma10_wins",
+            "ewma10_margin",
+            "ewma4_wins",
+            "ewma4_margin",
+        ]
+        [opp_pull_cols.append(col) for col in additional_cols]
 
         opp_pull_cols = list(set(opp_pull_cols))
         opp_pull_cols.sort()
@@ -324,6 +377,47 @@ def clean_games(scraped_games_data, start_year=1990):
         game_df.drop(columns=["team_opp", "opp_opp"], axis=1, inplace=True)
         return game_df
 
+    def add_more_features(game_df):
+        # add log_year feature
+        game_df["log_year"] = np.log(game_df.season_year)
+
+        game_df["ewma_third_conv_pct"] = (
+            game_df["ewma_third_down_success"] / game_df["ewma_third_down_att"]
+        )
+
+        game_df["ewma_third_conv_pct_def"] = (
+            game_df["ewma_third_down_success_def"] / game_df["ewma_third_down_att_def"]
+        )
+
+        game_df["ewma_third_conv_pct_opp"] = (
+            game_df["ewma_third_down_success_opp"] / game_df["ewma_third_down_att_opp"]
+        )
+
+        game_df["ewma_third_conv_pct_def_opp"] = (
+            game_df["ewma_third_down_success_def_opp"]
+            / game_df["ewma_third_down_att_def_opp"]
+        )
+
+        # total yds
+
+        game_df["ewma_total_yds_off"] = (
+            game_df["ewma_pass_yds"] + game_df["ewma_pass_td"]
+        )
+
+        game_df["ewma_total_yds_def"] = (
+            game_df["ewma_pass_yds_def"] + game_df["ewma_pass_yds_opp"]
+        )
+
+        game_df["ewma_total_yds_off_opp"] = (
+            game_df["ewma_pass_yds_opp"] + game_df["ewma_rush_yds_opp"]
+        )
+
+        game_df["ewma_total_yds_def_opp"] = (
+            game_df["ewma_pass_yds_def_opp"] + game_df["ewma_rush_yds_def_opp"]
+        )
+
+        return game_df
+
     def main(scraped_games_data, start_year):
         game_df = read_pickle(scraped_games_data, start_year)
         game_df = clean_home_games(game_df)
@@ -331,8 +425,10 @@ def clean_games(scraped_games_data, start_year=1990):
         game_df = get_def_stats(game_df)
         game_df = cleanup_dtypes_nans(game_df)
         game_df = perform_shifts(game_df)
+        game_df = add_features(game_df)
         game_df = pull_opposing_stats(game_df)
         game_df = get_turnovers(game_df)
+        game_df = add_more_features(game_df)
 
         return game_df
 
