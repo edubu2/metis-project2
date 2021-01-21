@@ -184,4 +184,4 @@ def scrape_games(start_year=1980, end_year=2000, save_to=False):
 # team_df = scrape_team_stats(
 #     start_year=1980, end_year=2020, save_to="team_stats_scraped.pickle")
 
-game_df = scrape_games(start_year=1980, end_year=2020, save_to="games_scraped.pickle")
+game_df = scrape_games(start_year=1990, end_year=2020, save_to="games_scraped.pickle")

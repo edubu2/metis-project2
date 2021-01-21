@@ -125,4 +125,4 @@ def scrape_reg_season(start_year, end_year, outfile_path):
     return game_df
 
 
-game_df = scrape_reg_season(1980, 2020, "data/games.pickle")
+game_df = scrape_reg_season(1990, 2020, "data/games.pickle")
