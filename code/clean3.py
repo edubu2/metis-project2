@@ -376,6 +376,13 @@ def clean_games(scraped_games_data, start_year=1990):
             game_df["ewma4_margin_opp"] - game_df["ewma_margin_opp"]
         )
 
+        game_df = game_df.dropna(
+            subset=["trend_ewma4_19_opp", "trend_ewma4_19"], how="any"
+        )
+        game_df[["trend_ewma4_19_opp", "trend_ewma4_19"]] = game_df[
+            ["trend_ewma4_19_opp", "trend_ewma4_19"]
+        ].astype(float)
+
         return game_df
 
     def main(scraped_games_data, start_year):
