@@ -324,6 +324,13 @@ def clean_games(scraped_games_data, start_year=1990):
         return game_df
 
     def add_more_features(game_df):
+        """
+            Adds more features to game_df, including:
+                - log_year
+                - third_down_success
+                - total_yards
+                - trend_margin (ewma4 margin - ewma19 margin)
+        """
         # add log_year feature
         game_df["log_year"] = np.log(game_df.season_year)
 
