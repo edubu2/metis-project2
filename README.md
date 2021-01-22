@@ -36,11 +36,6 @@ Data cleaning was a tedious process, as I needed to convert the data into time-s
 - **Time-Series**: implement moving averages; calculations beginning with the team's previous week
 - **Self-Join**: in order to pull the opponent stats from the adjacent row, I self-joined the dataFrame to itself on a custom-created game-id field. 
 
-## Key Processes
-
-`scrape.py` uses the `BeautifulSoup` python library to programatically scrape statistics from every NFL game dating back to 1960 from the [Pro Football Reference website](pro-football-reference.com). We could have gone back further, but the overall objective here is to predict	
-  * see: `scrape.py` and `scrape_team_schedules.ipynb`
-
 ---
 ## Feature Engineering Highlights
 
