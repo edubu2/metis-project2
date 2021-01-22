@@ -9,7 +9,7 @@ Duration: 8 days
 ---
 ## Objective
 
-To use data gathered via web scraping to predict the resulting points margin 
+To use data gathered via web scraping to predict the resulting points margin of NFL games.
 
 ---
 ## Tech Stack
@@ -31,15 +31,10 @@ Related files: `scrape.py` & `clean.py`
 
 The data is pulled from pro-football-reference.com using Python3's BeautifulSoup web scraping library. The work that went into the web scraping script (`scrape.py`) can be found in: `code/other-notebooks/scrape_game_data.ipynb`.
 
-Data cleaning was a tedius process, as I needed to convert the data into time-series data. In addition, the raw data contains two rows per game: one for each team. And, since the data is at the team/game level, the outcome of the game was in the same row as the stats for that game. We can't predict the outcome of a game using that game's stats. The solutions to these problems are summarized in the bullet points below, and the work going into the code can be found in `code/clean_game_data.ipynb`.
+Data cleaning was a tedious process, as I needed to convert the data into time-series data. In addition, the raw data contains two rows per game: one for each team. And, since the data is at the team/game level, the outcome of the game was in the same row as the stats for that game. We can't predict the outcome of a game using that game's stats. The solutions to these problems are summarized in the bullet points below, and the work going into the code can be found in `code/clean_game_data.ipynb`.
 
 - **Time-Series**: implement moving averages; calculations beginning with the team's previous week
 - **Self-Join**: in order to pull the opponent stats from the adjacent row, I self-joined the dataFrame to itself on a custom-created game-id field. 
-
-## Key Processes
-
-`scrape.py` uses the `BeautifulSoup` python library to programatically scrape statistics from every NFL game dating back to 1960 from the [Pro Football Reference website](pro-football-reference.com). We could have gone back further, but the overall objective here is to predict	
-  * see: `scrape.py` and `scrape_team_schedules.ipynb`
 
 ---
 ## Feature Engineering Highlights
@@ -79,12 +74,11 @@ What does that mean?
 - well, it means that the features I've selected can account for 15% of the variance in points margin. Considering that we are literally measuring levels of human error, that's pretty good. It's not going to beat any Vegas lines, but finding large variances to Vegas lines may or may not yield some value for an undecided bettor.
 - Please, do not place any bets based on results from this model.
 
-The model correctly determined the outcome of 64% of the games during testing. It also will correctly predict the margin within 13.8 points 68% of the time.
+The model correctly determined the outcome of 64% of the games during testing. It also will correctly predict the margin within 13.8 points approximately 68% of the time.
 
 ![Prediction vs Actual](https://github.com/edubu2/metis-project2/blob/main/code/figures/pred_vs_actual.png)
 
 ---
 ## Data Sources
 
-- NFL Team Statistics: [Pro Football Reference](pro-football-reference.com)
-- NFL Historical Spread Data: [kaggle.com/tobycrabtree](https://www.kaggle.com/tobycrabtree/nfl-scores-and-betting-data)
+- NFL Team Statistics: [Pro Football Reference](https://www.pro-football-reference.com/)
