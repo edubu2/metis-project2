@@ -84,7 +84,7 @@ def clean_games(scraped_games_data, start_year=1990):
         )
         if start_year > 1960:
             mask = game_df["season_year"] >= start_year
-            game_df = game_df[mask]
+            game_df = game_df[mask].copy()
 
         return game_df
 
@@ -376,8 +376,8 @@ def clean_games(scraped_games_data, start_year=1990):
             game_df["ewma4_margin_opp"] - game_df["ewma_margin_opp"]
         )
 
-        game_df = game_df.dropna(
-            subset=["trend_ewma4_19_opp", "trend_ewma4_19"], how="any"
+        game_df.dropna(
+            subset=["trend_ewma4_19_opp", "trend_ewma4_19"], how="any", inplace=True
         )
         game_df[["trend_ewma4_19_opp", "trend_ewma4_19"]] = game_df[
             ["trend_ewma4_19_opp", "trend_ewma4_19"]
