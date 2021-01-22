@@ -9,7 +9,7 @@ Duration: 8 days
 ---
 ## Objective
 
-To use data gathered via web scraping to predict the resulting points margin 
+To use data gathered via web scraping to predict the resulting points margin of NFL games.
 
 ---
 ## Tech Stack
