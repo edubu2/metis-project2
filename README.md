@@ -74,7 +74,7 @@ What does that mean?
 - well, it means that the features I've selected can account for 15% of the variance in points margin. Considering that we are literally measuring levels of human error, that's pretty good. It's not going to beat any Vegas lines, but finding large variances to Vegas lines may or may not yield some value for an undecided bettor.
 - Please, do not place any bets based on results from this model.
 
-The model correctly determined the outcome of 64% of the games during testing. It also will correctly predict the margin within 13.8 points 68% of the time.
+The model correctly determined the outcome of 64% of the games during testing. It also will correctly predict the margin within 13.8 points approximately 68% of the time.
 
 ![Prediction vs Actual](https://github.com/edubu2/metis-project2/blob/main/code/figures/pred_vs_actual.png)
 
