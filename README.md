@@ -81,7 +81,7 @@ What does that mean?
 
 The model correctly determined the outcome of 64% of the games during testing. It also will correctly predict the margin within 13.8 points 68% of the time.
 
-![Prediction vs Actual](https://github.com/edubu2/metis-project2/blob/main/code/figures/pred_vs_actual.pnghttps://github.com/edubu2/metis-project2/blob/main/code/figures/pred_vs_actual.png)
+![Prediction vs Actual](https://github.com/edubu2/metis-project2/blob/main/code/figures/pred_vs_actual.png)
 
 ---
 ## Data Sources
