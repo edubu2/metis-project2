@@ -387,14 +387,20 @@ def clean_games(scraped_games_data, start_year=1990):
 
     def main(scraped_games_data, start_year):
         game_df = read_pickle(scraped_games_data, start_year)
-        game_df = clean_home_games(game_df)
-        game_df = add_initial_cols(game_df)
-        game_df = get_def_stats(game_df)
-        game_df = cleanup_dtypes_nans(game_df)
-        game_df = perform_shifts(game_df)
-        game_df = add_features(game_df)
-        game_df = pull_opposing_stats(game_df)
-        game_df = add_more_features(game_df)
+
+        funcs = [
+            clean_home_games,
+            add_initial_cols,
+            get_def_stats,
+            cleanup_dtypes_nans,
+            perform_shifts,
+            add_features,
+            pull_opposing_stats,
+            add_more_features,
+        ]
+
+        for func in funcs:
+            game_df = func(game_df)
 
         return game_df
 
