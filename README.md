@@ -36,13 +36,13 @@ Data cleaning was a tedius process, as I needed to convert the data into time-se
 - **Time-Series**: implement moving averages; calculations beginning with the team's previous week
 - **Self-Join**: in order to pull the opponent stats from the adjacent row, I self-joined the dataFrame to itself on a custom-created game-id field. 
 
-### Key Processes
+## Key Processes
 
 `scrape.py` uses the `BeautifulSoup` python library to programatically scrape statistics from every NFL game dating back to 1960 from the [Pro Football Reference website](pro-football-reference.com). We could have gone back further, but the overall objective here is to predict	
   * see: `scrape.py` and `scrape_team_schedules.ipynb`
 
 ---
-### Feature Engineering Highlights
+## Feature Engineering Highlights
 
 * Introduce several rolling statistics for each category in the data:
   * 3-game rolling mean 
@@ -51,7 +51,7 @@ Data cleaning was a tedius process, as I needed to convert the data into time-se
   * these features are all automatically generated using the functions in `clean.py`. 
 
 ---
-### Feature Selection
+## Feature Selection
 
 Once I gathered moving averages for all of the available statistics, and then pulled all of them from the opponent's row, there were over 200 potential features. Even though there were 20,000 games in our sample, I needed to reduce the compexity (num. features) significantly the model to generalize well to new data (i.e. avoid overfitting).
 
@@ -80,6 +80,8 @@ What does that mean?
 - Please, do not place any bets based on results from this model.
 
 The model correctly determined the outcome of 64% of the games during testing. It also will correctly predict the margin within 13.8 points 68% of the time.
+
+![Prediction vs Actual](https://github.com/edubu2/metis-project2/blob/main/code/figures/pred_vs_actual.pnghttps://github.com/edubu2/metis-project2/blob/main/code/figures/pred_vs_actual.png)
 
 ---
 ## Data Sources
