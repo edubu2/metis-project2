@@ -31,7 +31,7 @@ Related files: `scrape.py` & `clean.py`
 
 The data is pulled from pro-football-reference.com using Python3's BeautifulSoup web scraping library. The work that went into the web scraping script (`scrape.py`) can be found in: `code/other-notebooks/scrape_game_data.ipynb`.
 
-Data cleaning was a tedius process, as I needed to convert the data into time-series data. In addition, the raw data contains two rows per game: one for each team. And, since the data is at the team/game level, the outcome of the game was in the same row as the stats for that game. We can't predict the outcome of a game using that game's stats. The solutions to these problems are summarized in the bullet points below, and the work going into the code can be found in `code/clean_game_data.ipynb`.
+Data cleaning was a tedious process, as I needed to convert the data into time-series data. In addition, the raw data contains two rows per game: one for each team. And, since the data is at the team/game level, the outcome of the game was in the same row as the stats for that game. We can't predict the outcome of a game using that game's stats. The solutions to these problems are summarized in the bullet points below, and the work going into the code can be found in `code/clean_game_data.ipynb`.
 
 - **Time-Series**: implement moving averages; calculations beginning with the team's previous week
 - **Self-Join**: in order to pull the opponent stats from the adjacent row, I self-joined the dataFrame to itself on a custom-created game-id field. 
