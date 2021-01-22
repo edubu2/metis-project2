@@ -81,5 +81,4 @@ The model correctly determined the outcome of 64% of the games during testing. I
 ---
 ## Data Sources
 
-- NFL Team Statistics: [Pro Football Reference](pro-football-reference.com)
-- NFL Historical Spread Data: [kaggle.com/tobycrabtree](https://www.kaggle.com/tobycrabtree/nfl-scores-and-betting-data)
+- NFL Team Statistics: [Pro Football Reference](https://www.pro-football-reference.com/)
